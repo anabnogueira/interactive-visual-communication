@@ -1,9 +1,9 @@
 clear all, close all
 
-imgg = imgread('lena512.bmp');
+imgg = imread('images/lena512.bmp');
 
-figure, imgshow(imgg)
-image = imnoise(imgg, 'salt & pepper', 0, 0.05);
+figure, imshow(imgg)
+image = imnoise(imgg, 'salt & pepper', 0.05);
 figure, imshow(image);
 
 % method 1
