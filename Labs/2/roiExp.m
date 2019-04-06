@@ -1,10 +1,21 @@
 clear all, close all
+
 img = imread('veiculoGray.jpg');
-imshow(img);hold on;
-n=0; but=1;
+
+% hold on holds current graph, plot, axis etc.
+imshow(img); hold on;
+
+n = 0; but = 1;
 while (but == 1 | but == 32)
-    [ci,li,but]=ginput(1);
-    but
+    
+    % ginput(N) - graphical input from mouse
+    %   gets N points from the current axes and returns X,Y coordinates
+    %   in length N vectors X and Y
+    %   Click enter to terminate the mouse input
+    [ci,li,but] = ginput(1);
+    
+    but; % if no semicolon is used, just prints the value of but
+    
     if but == 1 % add point
         n = n+1;
         cp(n) = ci;

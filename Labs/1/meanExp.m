@@ -10,7 +10,7 @@ imagesc(img);
 % sets the current image to gray
 colormap gray;
 
-% whatever this is?
+% ""what this does mean?""
 %noise = round(randn(size(img))*50);
 %imageN = max(min(imgg+uint8(noise),255),0);
 
