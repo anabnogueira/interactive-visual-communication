@@ -2,7 +2,12 @@ clear all
 
 I = imread('veiculoGray.jpg');
 
-JI = imrotate(I , -10, 'bilinear', 'crop');
+
+% Performing simple operations on an image:
+% Rotation, flipping, etc
+
+
+J1 = imrotate(I , -10, 'bilinear', 'crop');
 %figure, imshow(I), figure, imshow(J1)
 
 J2 = fliplr(I);
@@ -15,7 +20,9 @@ J4 = permute(I, [2 1])
 %figure, imshow(I), figure, imshow(J4);
 
 
-% esta ultima equivalente a:
+% J5 below is equal to J4, but with different code:
 
-%J5 = I';
+J5 = I';
+
+%figure, imshow(I), figure, imshow(J5);
 

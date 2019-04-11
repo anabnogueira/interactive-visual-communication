@@ -1,9 +1,13 @@
 clear all, close all;
+
+%   ones(N,M) returns a NxM matrix of 1's
+
 img = ones(300,300);
+
 figure;
 imshow(img); axis on; hold on;
 
-% ----- letra T ----- %
+% ----- letter T ----- %
 
 top = [ 50 55 60 65 70 75 80
         100 100 100 100 100 100 100 ];
@@ -18,6 +22,9 @@ troncoR = [ 70 70 70 70 70 70
 SHAPE = 50 + [top R_side troncoR troncoL L_side ];
 
 plot(SHAPE(1,:),SHAPE(2,:),'r.')
+
+
+% Operations performed on T
 
 % ----- Translate ----- %
 

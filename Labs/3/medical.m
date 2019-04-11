@@ -2,29 +2,54 @@ clear all, close all
 
 img = imread('BrainMRI_Axial.jpg');
 imshow(img); title('Original');
+
+
 imgg = rgb2gray(img);
+
+
+%   print histogram
 %figure,imhist(imgg);
 
+
+% arbitrary measure? threshold? unsure about what this is
+
 BW = imgg > 60;
+
+
+
 figure,
 subplot(2,3,1);
-imshow(BW);title('Original BW');
+
+imshow(BW); title('Original BW');
+
+
+%   strel: create morphological structuring element
+
 se = strel('disk',3);
 % se = strel('line',3,45);
 % se = strel('square',3);
 % se = strel('ball',3);
 
+
+% operations over image:
+
+%   erosion
 BW1 = imerode(BW,se);
 subplot(2,3,2);imshow(BW1);title('Erosao');
 
+%   dilation
 BW2 = imdilate(BW,se);
 subplot(2,3,3);imshow(BW2);title('Dilatacao');
 
+%   opening
 BW3 = imopen(BW,se);
 subplot(2,3,4);imshow(BW3);title('Abertura');
 
+%   closing
 BW4 = imclose(BW,se);
 subplot(2,3,5);imshow(BW4);title('Fecho');
+
+
 
 [lb num] = bwlabel(BW3);
 figure,
