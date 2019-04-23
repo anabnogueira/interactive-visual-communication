@@ -86,27 +86,38 @@ switch command
         switch imgNr
             case 1
                 imgPath = 'Moedas/Moedas1.jpg';
-                imshow(imgPath)
+                originalImage = imread(imgPath);
             case 2
                 imgPath = 'Moedas/Moedas2.jpg';
-                imshow(imgPath)
+                originalImage = imread(imgPath);
             case 3
                 imgPath = 'Moedas/Moedas3.jpg';
-                imshow(imgPath)
+                originalImage = imread(imgPath);
             case 4
-                imgPath = 'Moedas/Moedas1.jpg';
-                imshow(imgPath)
+                imgPath = 'Moedas/Moedas4.jpg';
+                originalImage = imread(imgPath);
             otherwise
                 fprintf('\nERROR: Invalid image number!\n')
         end
         
+        
     case 2
         fprintf('\nBye!\n\n')
         return
-        
-
 end
-        
+
+threshold = 115;
+minArea = 15;
+
+grayscaleRed = originalImage(:,:,1);
+bw = grayscaleRed > threshold;
+imshow(bw);
+
+[lb num]=bwlabel(bw);
+regionProps = regionprops(lb,'area','FilledImage','Centroid');
+inds = find([regionProps.Area]>minArea) % regions 
+
+nrObjects = length(inds)
 
 
 
