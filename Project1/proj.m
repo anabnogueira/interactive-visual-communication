@@ -100,7 +100,6 @@ switch command
                 fprintf('\nERROR: Invalid image number!\n')
         end
         
-        
     case 2
         fprintf('\nBye!\n\n')
         return
@@ -109,15 +108,51 @@ end
 threshold = 115;
 minArea = 15;
 
+se = strel('disk', 9);
+se2 = strel('disk', 9);
+
 grayscaleRed = originalImage(:,:,1);
 bw = grayscaleRed > threshold;
-imshow(bw);
-
-[lb num]=bwlabel(bw);
-regionProps = regionprops(lb,'area','FilledImage','Centroid');
+figure, imshow(bw)
+bw1 = imerode(bw, se);
+figure, imshow(bw1);
+bw2 = imdilate(bw1, se);
+figure, imshow(bw2);
+keyboard
+[lb num]=bwlabel(bw1);
+regionProps = regionprops(lb,'Area','FilledImage','Centroid', 'Perimeter');
 inds = find([regionProps.Area]>minArea) % regions 
 
-nrObjects = length(inds)
+[lb num]=bwlabel(bw2);
+regionProps2 = regionprops(lb,'Area','FilledImage','Centroid', 'Perimeter');
+inds2 = find([regionProps.Area]>minArea) % regions 
+
+%BW2 = bwperim(bw2,8);
+%imshow(BW2);
+
+
+
+
+hold on
+for i=1:length(inds)
+    %figure,imshow(regionProps(inds(i)).FilledImage);
+    props = regionprops(double(regionProps(inds(i)).FilledImage),...
+        'Orientation','MajorAxisLength','MinorAxisLength');
+    ellipse(props.MajorAxisLength/2,props.MinorAxisLength/2,-props.Orientation*pi/180,...
+      regionProps(inds(i)).Centroid(1),regionProps(inds(i)).Centroid(2),'r');
+    
+    plot(regionProps(inds(i)).Centroid(1),regionProps(inds(i)).Centroid(2),'g*')
+    
+    
+
+    fprintf('Object #' + string(i) + '\n');
+    fprintf('Centroid X: '+string(regionProps(inds(i)).Centroid(1))+'\n');
+    fprintf('Centroid Y: '+string(regionProps(inds(i)).Centroid(2))+'\n');
+    fprintf('Perimeter: '+string(regionProps(inds(i)).Perimeter)+'\n');
+    fprintf('Area: '+string(regionProps(inds(i)).Area)+'\n\n');
+
+end
+
 
 
 
