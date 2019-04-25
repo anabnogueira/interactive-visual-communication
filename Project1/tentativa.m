@@ -67,13 +67,13 @@ coin1EurPE = perimetersE(:,6);
 coin50CentPE = perimetersE(:,7);
 
 % DELTAS
-delta1CentA = coin1CentAE / coin1CentA
-delta2CentA = coin2CentAE / coin2CentA
-delta10CentA = coin10CentAE / coin10CentA
-delta5CentA = coin5CentAE / coin5CentA
-delta20CentA = coin20CentAE / coin20CentA
-delta1EurA = coin1EurAE / coin1EurA
-delta50CentA = coin50CentAE / coin50CentA
+delta1CentA = coin1CentAE / coin1CentA;
+delta2CentA = coin2CentAE / coin2CentA;
+delta10CentA = coin10CentAE / coin10CentA;
+delta5CentA = coin5CentAE / coin5CentA;
+delta20CentA = coin20CentAE / coin20CentA;
+delta1EurA = coin1EurAE / coin1EurA;
+delta50CentA = coin50CentAE / coin50CentA;
 
 
 fprintf('\n--------------------------------------------------------------------\n')
@@ -171,9 +171,7 @@ imageOpened = imdilate(imageEroded, seOp);
 
 [labelsOpened numOp]=bwlabel(imageOpened);
 imageProps = regionprops(labelsOpened, 'Area', 'Perimeter', 'Centroid', 'FilledImage');
-indexes = find([imageProps.Area]>minimumArea)
-
-
+indexes = find([imageProps.Area]>minimumArea);
 
 while(true)
    [x, y, button] = ginput(1);
@@ -183,8 +181,6 @@ while(true)
        case 109 % Letter m - show coin/object measurements
            hold on
            for i=1:length(indexes)
-               props = regionprops(double(imageProps(indexes(i)).FilledImage),...
-                   'Orientation','MajorAxisLength','MinorAxisLength');
                [B,L,N] = bwboundaries(imageOpened);
 
                % Plot object boundaries          
@@ -226,7 +222,6 @@ while(true)
                    t.FontSmoothing = 'on';
                    t.FontSize = 10;
                    t.Margin = 5;
-                   t.Visible = 'on';
                end
                
                if (buttonm == 113) % Press q to quit
@@ -234,29 +229,117 @@ while(true)
                    break;
                end
            end
-       case 100
-           [xm, ym, buttonm] = ginput(1);
-           ret = labelsOpened(round(ym),round(xm));
-           hold on
-           for j=1:length(indexes)
-               if (j ~= ret)
-                   x1 = imageProps(ret).Centroid(1);
-                   y1 = imageProps(ret).Centroid(2);
-                   x2 = imageProps(indexes(j)).Centroid(1);
-                   y2 = imageProps(indexes(j)).Centroid(2);
-                   distance = sqrt((x1-x2).^2 + (y1-y2).^2);
-                   plot(imageProps(ret).Centroid(1),imageProps(ret).Centroid(2),'rx', 'LineWidth', 21)
-                   plot(imageProps(indexes(j)).Centroid(1),imageProps(indexes(j)).Centroid(2),'rx', 'LineWidth', 21)
-                   plot([x1 x2], [y1 y2], 'k:', 'LineWidth', 2);
+       case 100 % Letter d - compute distances
+           while(true)
+               [xm, ym, buttonm] = ginput(1);
+               ret = labelsOpened(round(ym),round(xm));
+               hold on
+               for j=1:length(indexes)
+                   if (j ~= ret)
+                       x1 = imageProps(ret).Centroid(1);
+                       y1 = imageProps(ret).Centroid(2);
+                       x2 = imageProps(indexes(j)).Centroid(1);
+                       y2 = imageProps(indexes(j)).Centroid(2);
+                       distance = sqrt((x1-x2).^2 + (y1-y2).^2);
+                       plot(imageProps(ret).Centroid(1),imageProps(ret).Centroid(2),'rx', 'LineWidth', 3);
+                       plot(imageProps(indexes(j)).Centroid(1),imageProps(indexes(j)).Centroid(2),'rx', 'LineWidth', 3);
+                       plot([round(x1) round(x2)], [round(y1) round(y2)], 'k:', 'LineWidth', 2);
+
+                       % Plot Distance Information
+                       xnew = x1 - (x1-x2)/2;
+                       ynew = y1 - (y1-y2)/2;
+
+                       t = text(round(xnew), round(ynew), num2str(distance), 'FontSize', 9,'FontWeight','bold');
+
+                       % textbox formatting
+                       t.BackgroundColor = 'w';
+                       t.Color = 'k';
+                       t.FontSmoothing = 'on';
+                       t.FontSize = 10;
+                       t.Margin = 5;
+                   end
+               end
+               
+               [xm, ym, buttonAfter] = ginput(1);
+
+               if (buttonAfter == 113) % Press q to quit
+                       imshow(originalImage);
+                       break;
+               end
+               if (buttonAfter == 114) % Press r to reset
+                       imshow(originalImage);
                end
            end
-           
-           if (buttonm == 113) % Press q to quit
-                   imshow(originalImage);
-                   break;
+       case 103 % Letter g - show boundary derivative graph
+           while(true)
+               % select region
+               [xb, yb, buttonBound] = ginput(1);
+               ret = labelsOpened(round(yb),round(xb));
+               
+               if (ret ~= 0)
+                   hold on
+                   [B,L,N] = bwboundaries(imageOpened);
+                   boundary = B{ret};
+                   
+                   plot(boundary(:,2), boundary(:,1), 'k--', 'LineWidth', 4);
+
+                   % number of points to show in boundary
+                   fprintf('Choose number of points:\n');
+                   nrPoints = input('>> ');             
+               
+                   step = round(length(B{ret})/nrPoints);
+                   index = 1;
+                   a = [];
+                   for l=1:nrPoints
+                       plot(B{ret}(index,2), B{ret}(index,1),'ro', 'LineWidth', 3);
+                       a = [a ; B{ret}(index,2), B{ret}(index,1)];
+                       index = index + step;
+                   end
+                   
+                   b = [];
+                   for m=1:length(a)
+                       if(a(end,:) == a(m,:))
+                          slope = (a(1,2) - a(m,2))/(a(1,1) - a(m,1));
+                          b = [b ; slope]; 
+                          break;
+                       end
+                       
+                       slope = (a(m+1,2) - a(m,2))/(a(m+1,1) - a(m,1));
+                       b = [b ; slope];
+                       
+                   end
+                   
+                   figure;
+                   a(end,:) = [];
+                   x = [1:1:length(b)];
+                   x = x.';
+                   y = b;
+                   graph = plot(x,y);
+                   graph.LineWidth = 2;
+                   graph.Color = 'r';
+                   ax = gca;
+                   ax.XAxisLocation = 'origin';
+                   
+ 
+                   
+                   
+                   
+                   % to do: figure out how to close figure
+                   
+                   [xm, ym, buttonAfter] = ginput(1);
+
+                   if (buttonAfter == 113) % Press q to quit
+                           imshow(originalImage);
+                           break;
+                   end
+                   if (buttonAfter == 114) % Press r to reset
+                           imshow(originalImage);
+                   end        
+               end               
            end
+           
        otherwise
-           fprintf('nope\n');
+           fprintf('Byeeeee\n');
            break;
    end
 end
