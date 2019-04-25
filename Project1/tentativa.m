@@ -187,7 +187,7 @@ while(true)
                    'Orientation','MajorAxisLength','MinorAxisLength');
                [B,L,N] = bwboundaries(imageOpened);
 
-               % PLOT BOUNDARIES            
+               % Plot object boundaries          
                for k=1:length(B)
                    boundary = B{k};
                    if(k > N)
@@ -196,48 +196,65 @@ while(true)
                        plot(boundary(:,2), boundary(:,1), 'k--', 'LineWidth',4);
                    end
                end
-
+               % plot centroids
                plot(imageProps(indexes(i)).Centroid(1),imageProps(indexes(i)).Centroid(2),'rx', 'LineWidth', 21)
            end
+           
            while(true)
-               [xm, ym, buttonm] = ginput(1);             
-               ret = labelsOpened(round(ym),round(xm))
+               % select region
+               [xm, ym, buttonm] = ginput(1);
+               ret = labelsOpened(round(ym),round(xm));
                if (ret ~= 0)
                    xr = imageProps(ret).Centroid(1);
                    yr = imageProps(ret).Centroid(2);
-                   plot(xr,yr,'black.','markersize',10);
                    
+                   % region information
                    regionText = strcat('Region #', num2str(ret));
-                   
                    areaText = {'Area:', num2str(imageProps(ret).Area)};
-                   areaTextCat = strjoin(areaText, ' ');
-                   
+                   areaTextCat = strjoin(areaText, ' '); 
                    perimeterText = {'Perimeter:', num2str(imageProps(ret).Perimeter)};
                    perimeterTextCat = strjoin(perimeterText, ' ');
-                   
                    legendText = {regionText, areaTextCat, perimeterTextCat}; 
                    legendTextCat = strjoin(legendText, '\n');
                    
+                   % position textbox
                    t = text(xr-200-imageProps(ret).Perimeter/(2*pi), yr-imageProps(ret).Perimeter/(2*pi), legendTextCat, 'FontSize',12,'FontWeight','bold');
+                   
+                   % textbox formatting
                    t.BackgroundColor = 'w';
                    t.Color = 'k';
                    t.FontSmoothing = 'on';
                    t.FontSize = 10;
                    t.Margin = 5;
                    t.Visible = 'on';
-                   %figure,imshow(imageProps(ret).FilledImage);
-                        %fprintf('Object #' + string(i) + '\n');
-                        %fprintf('Centroid X: '+string(imageProps(indexes(i)).Centroid(1))+'\n');
-                        %fprintf('Centroid Y: '+string(imageProps(indexes(i)).Centroid(2))+'\n');
-                        %fprintf('Perimeter: '+string(imageProps(indexes(i)).Perimeter)+'\n');
-                        %fprintf('Area: '+string(imageProps(indexes(i)).Area)+'\n\n');
                end
                
-               if (buttonm == 3)
+               if (buttonm == 113) % Press q to quit
+                   imshow(originalImage);
                    break;
                end
            end
+       case 100
+           [xm, ym, buttonm] = ginput(1);
+           ret = labelsOpened(round(ym),round(xm));
+           hold on
+           for j=1:length(indexes)
+               if (j ~= ret)
+                   x1 = imageProps(ret).Centroid(1);
+                   y1 = imageProps(ret).Centroid(2);
+                   x2 = imageProps(indexes(j)).Centroid(1);
+                   y2 = imageProps(indexes(j)).Centroid(2);
+                   distance = sqrt((x1-x2).^2 + (y1-y2).^2);
+                   plot(imageProps(ret).Centroid(1),imageProps(ret).Centroid(2),'rx', 'LineWidth', 21)
+                   plot(imageProps(indexes(j)).Centroid(1),imageProps(indexes(j)).Centroid(2),'rx', 'LineWidth', 21)
+                   plot([x1 x2], [y1 y2], 'k:', 'LineWidth', 2);
+               end
+           end
            
+           if (buttonm == 113) % Press q to quit
+                   imshow(originalImage);
+                   break;
+           end
        otherwise
            fprintf('nope\n');
            break;
