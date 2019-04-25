@@ -36,8 +36,9 @@ coin1EurP = perimeters(:,6);
 coin50CentP = perimeters(:,7);
 
 % EROSION OPERATION
-se = strel('disk', 7);
-erosionImage = imerode(bw, se);
+seEr = strel('disk', 7);
+seOp = strel('disk', 3);
+erosionImage = imerode(bw, seEr);
 
 [lbE numE]=bwlabel(erosionImage);
 
@@ -160,16 +161,18 @@ switch command
         return
 end
 
-figure, imshow(originalImage);
+figure, hold on, imshow(originalImage);
 
 % erode current image
 grayscaleRedOriginal = originalImage(:,:,1);
 bwOriginal = grayscaleRedOriginal > threshold;
-imageEroded = imerode(bwOriginal, se);
-[lbEr numEr]=bwlabel(imageEroded);
+imageEroded = imerode(bwOriginal, seEr);
+imageOpened = imdilate(imageEroded, seOp);
 
-imageProps = regionprops(lbEr, 'Area', 'Perimeter');
+[labelsOpened numOp]=bwlabel(imageOpened);
+imageProps = regionprops(labelsOpened, 'Area', 'Perimeter', 'Centroid', 'FilledImage');
 indexes = find([imageProps.Area]>minimumArea)
+
 
 
 while(true)
@@ -177,16 +180,69 @@ while(true)
    switch button
        case 110 % Letter n - show number of objects contained in image
            fprintf('Number of Objects detected: ' + string(length(indexes)) + '\n');
+       case 109 % Letter m - show coin/object measurements
+           hold on
+           for i=1:length(indexes)
+               props = regionprops(double(imageProps(indexes(i)).FilledImage),...
+                   'Orientation','MajorAxisLength','MinorAxisLength');
+               [B,L,N] = bwboundaries(imageOpened);
+
+               % PLOT BOUNDARIES            
+               for k=1:length(B)
+                   boundary = B{k};
+                   if(k > N)
+                       plot(boundary(:,2), boundary(:,1), 'w--', 'LineWidth', 3);
+                   else
+                       plot(boundary(:,2), boundary(:,1), 'k--', 'LineWidth',4);
+                   end
+               end
+
+               plot(imageProps(indexes(i)).Centroid(1),imageProps(indexes(i)).Centroid(2),'rx', 'LineWidth', 21)
+           end
+           while(true)
+               [xm, ym, buttonm] = ginput(1);             
+               ret = labelsOpened(round(ym),round(xm))
+               if (ret ~= 0)
+                   xr = imageProps(ret).Centroid(1);
+                   yr = imageProps(ret).Centroid(2);
+                   plot(xr,yr,'black.','markersize',10);
+                   
+                   regionText = strcat('Region #', num2str(ret));
+                   
+                   areaText = {'Area:', num2str(imageProps(ret).Area)};
+                   areaTextCat = strjoin(areaText, ' ');
+                   
+                   perimeterText = {'Perimeter:', num2str(imageProps(ret).Perimeter)};
+                   perimeterTextCat = strjoin(perimeterText, ' ');
+                   
+                   legendText = {regionText, areaTextCat, perimeterTextCat}; 
+                   legendTextCat = strjoin(legendText, '\n');
+                   
+                   t = text(xr-200-imageProps(ret).Perimeter/(2*pi), yr-imageProps(ret).Perimeter/(2*pi), legendTextCat, 'FontSize',12,'FontWeight','bold');
+                   t.BackgroundColor = 'w';
+                   t.Color = 'k';
+                   t.FontSmoothing = 'on';
+                   t.FontSize = 10;
+                   t.Margin = 5;
+                   t.Visible = 'on';
+                   %figure,imshow(imageProps(ret).FilledImage);
+                        %fprintf('Object #' + string(i) + '\n');
+                        %fprintf('Centroid X: '+string(imageProps(indexes(i)).Centroid(1))+'\n');
+                        %fprintf('Centroid Y: '+string(imageProps(indexes(i)).Centroid(2))+'\n');
+                        %fprintf('Perimeter: '+string(imageProps(indexes(i)).Perimeter)+'\n');
+                        %fprintf('Area: '+string(imageProps(indexes(i)).Area)+'\n\n');
+               end
+               
+               if (buttonm == 3)
+                   break;
+               end
+           end
+           
        otherwise
            fprintf('nope\n');
            break;
    end
 end
-
-function n = numberOfObjects()
-
-end
-   
 
 
 
