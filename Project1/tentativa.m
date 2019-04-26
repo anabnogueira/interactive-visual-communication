@@ -170,7 +170,7 @@ imageEroded = imerode(bwOriginal, seEr);
 imageOpened = imdilate(imageEroded, seOp);
 
 [labelsOpened numOp]=bwlabel(imageOpened);
-imageProps = regionprops(labelsOpened, 'Area', 'Perimeter', 'Centroid', 'FilledImage');
+imageProps = regionprops(labelsOpened, 'Area', 'Perimeter', 'Centroid', 'FilledImage', 'BoundingBox');
 indexes = find([imageProps.Area]>minimumArea);
 
 while(true)
@@ -229,6 +229,8 @@ while(true)
                    break;
                end
            end
+           
+           
        case 100 % Letter d - compute distances
            while(true)
                [xm, ym, buttonm] = ginput(1);
@@ -270,6 +272,8 @@ while(true)
                        imshow(originalImage);
                end
            end
+           
+           
        case 103 % Letter g - show boundary derivative graph
            while(true)
                % select region
@@ -283,59 +287,109 @@ while(true)
                    
                    plot(boundary(:,2), boundary(:,1), 'k--', 'LineWidth', 4);
 
-                   % number of points to show in boundary
-                   fprintf('Choose number of points:\n');
+                   % get number of points to show in boundary from console
+                   fprintf('\nChoose number of points:\n');
                    nrPoints = input('>> ');             
                
+                   % step to traverse matrix
                    step = round(length(B{ret})/nrPoints);
                    index = 1;
                    a = [];
+                   b = [];
+                   % plot points over boundary
                    for l=1:nrPoints
                        plot(B{ret}(index,2), B{ret}(index,1),'ro', 'LineWidth', 3);
                        a = [a ; B{ret}(index,2), B{ret}(index,1)];
                        index = index + step;
                    end
-                   
-                   b = [];
+                   % determine derivative between chosen points
                    for m=1:length(a)
+                       % check if it is the last el
+                       % determine derivative between last and first el
                        if(a(end,:) == a(m,:))
                           slope = (a(1,2) - a(m,2))/(a(1,1) - a(m,1));
                           b = [b ; slope]; 
                           break;
                        end
-                       
                        slope = (a(m+1,2) - a(m,2))/(a(m+1,1) - a(m,1));
                        b = [b ; slope];
-                       
                    end
                    
-                   figure;
+                   % create graph
+                   graphFigure = figure;
                    a(end,:) = [];
                    x = [1:1:length(b)];
                    x = x.';
                    y = b;
                    graph = plot(x,y);
+                   % format graph
                    graph.LineWidth = 2;
                    graph.Color = 'r';
                    ax = gca;
                    ax.XAxisLocation = 'origin';
                    
- 
+                   % wait for input on graph window
+                   [xg, yg, buttonGraph] = ginput(1);
+                   if (buttonGraph == 113)
+                       close(graphFigure);
+                   end
                    
-                   
-                   
-                   % to do: figure out how to close figure
-                   
+                   % wait for input on image window
                    [xm, ym, buttonAfter] = ginput(1);
-
                    if (buttonAfter == 113) % Press q to quit
                            imshow(originalImage);
                            break;
                    end
                    if (buttonAfter == 114) % Press r to reset
                            imshow(originalImage);
-                   end        
+                   end
                end               
+           end
+           
+       case 111 % Letter o - order by different parameters
+           fprintf('Select parameter to order by:\n');
+           fprintf('1 - Area\n');
+           fprintf('2 - Perimeter\n');
+           fprintf('3 - Circularity\n');
+           fprintf('4 - Sharpness\n');
+           while(true)
+               [xo, yo, buttonOrder] = ginput(1);
+               
+               if(buttonOrder == 49) % order by area
+                   regionAreas = [imageProps.Area];
+                   [sorted, ind] = sort(regionAreas);
+                   orderedFigure = figure;
+                   hold on;
+                   for o=1:length(ind)
+                       boundingBox = imageProps(ind(o)).BoundingBox;
+                       cropped = imcrop(originalImage, boundingBox);
+                       subplot(1, length(ind), o), imshow(cropped);
+                   end
+               end
+               
+               % FIX THIS
+               if(buttonOrder == 50) % order by perimeter
+                   regionPerimeters = [imageProps.Perimeter];
+                   [sorted, ind] = sort(regionPerimeters);
+                   orderedFigure = figure;
+                   hold on;
+                   for o=1:length(ind)
+                       boundingBox = imageProps(ind(o)).BoundingBox;
+                       cropped = imcrop(originalImage, boundingBox);
+                       subplot(1, length(ind), o), imshow(cropped);
+                   end
+               end
+               
+               [xm, ym, buttonAfter] = ginput(1);
+               if (buttonAfter == 113) % Press q to quit
+                   close(orderedFigure);
+                   imshow(originalImage);
+               end
+               
+               if (buttonAfter == 114) % Press r to reset
+                   close(orderedFigure);
+                   imshow(originalImage);
+               end
            end
            
        otherwise
