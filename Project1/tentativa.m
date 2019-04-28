@@ -9,7 +9,7 @@ minimumArea = 6;
 
 grayscaleRed = originalImg(:,:,1);
 bw = grayscaleRed > threshold;
-[lb num]=bwlabel(bw);
+[lb num] = bwlabel(bw);
 
 coinProps = regionprops(lb, 'Area', 'Perimeter');
 coinProps(end) = [];
@@ -39,41 +39,50 @@ coin50CentP = perimeters(:,7);
 seEr = strel('disk', 7);
 seOp = strel('disk', 3);
 erosionImage = imerode(bw, seEr);
+openImage = imdilate(erosionImage, seOp);
 
-[lbE numE]=bwlabel(erosionImage);
+[lbO numO]=bwlabel(openImage);
 
-coinPropsEroded = regionprops(lbE, 'Area', 'Perimeter');
-coinPropsEroded(end) = [];
+coinPropsOpened = regionprops(lbO, 'Area', 'Perimeter');
+coinPropsOpened(end) = [];
 
-areasE = sort([coinPropsEroded.Area]);
-perimetersE = sort([coinPropsEroded.Perimeter]);
+areasO = sort([coinPropsOpened.Area]);
+perimetersO = sort([coinPropsOpened.Perimeter]);
 
 % COIN AREAS
-coin1CentAE = areasE(:,1);
-coin2CentAE = areasE(:,2);
-coin10CentAE = areasE(:,3);
-coin5CentAE = areasE(:,4);
-coin20CentAE = areasE(:,5);
-coin1EurAE = areasE(:,6);
-coin50CentAE = areasE(:,7);
+coin1CentAO = areasO(:,1);
+coin2CentAO = areasO(:,2);
+coin10CentAO = areasO(:,3);
+coin5CentAO = areasO(:,4);
+coin20CentAO = areasO(:,5);
+coin1EurAO = areasO(:,6);
+coin50CentAO = areasO(:,7);
 
 % COIN PERIMETERS
-coin1CentPE = perimetersE(:,1);
-coin2CentPE = perimetersE(:,2);
-coin10CentPE = perimetersE(:,3);
-coin5CentPE = perimetersE(:,4);
-coin20CentPE = perimetersE(:,5);
-coin1EurPE = perimetersE(:,6);
-coin50CentPE = perimetersE(:,7);
+coin1CentPE = perimetersO(:,1);
+coin2CentPE = perimetersO(:,2);
+coin10CentPE = perimetersO(:,3);
+coin5CentPE = perimetersO(:,4);
+coin20CentPE = perimetersO(:,5);
+coin1EurPE = perimetersO(:,6);
+coin50CentPE = perimetersO(:,7);
 
 % DELTAS
-delta1CentA = coin1CentAE / coin1CentA;
-delta2CentA = coin2CentAE / coin2CentA;
-delta10CentA = coin10CentAE / coin10CentA;
-delta5CentA = coin5CentAE / coin5CentA;
-delta20CentA = coin20CentAE / coin20CentA;
-delta1EurA = coin1EurAE / coin1EurA;
-delta50CentA = coin50CentAE / coin50CentA;
+%delta1CentA = coin1CentAE / coin1CentA;
+%delta2CentA = coin2CentAE / coin2CentA;
+%delta10CentA = coin10CentAE / coin10CentA;
+%delta5CentA = coin5CentAE / coin5CentA;
+%delta20CentA = coin20CentAE / coin20CentA;
+%delta1EurA = coin1EurAE / coin1EurA;
+%delta50CentA = coin50CentAE / coin50CentA;
+
+delta1CentA = (coin1CentA - coin1CentAO) * 3/7;
+delta2CentA = (coin2CentA - coin2CentAO) * 3/7;
+delta10CentA = (coin10CentA - coin10CentAO) * 3/7;
+delta5CentA = (coin5CentA - coin5CentAO) * 3/7;
+delta20CentA = (coin20CentA - coin20CentAO) * 3/7;
+delta1EurA = (coin1EurA - coin1EurAO) * 3/7;
+delta50CentA = (coin50CentA - coin50CentAO) * 3/7;
 
 
 fprintf('\n--------------------------------------------------------------------\n')
@@ -173,6 +182,20 @@ imageOpened = imdilate(imageEroded, seOp);
 imageProps = regionprops(labelsOpened, 'Area', 'Perimeter', 'Centroid', 'FilledImage', 'BoundingBox');
 indexes = find([imageProps.Area]>minimumArea);
 
+newField = 'Circularity';
+for p=1:length(indexes)
+   imageProps(p).(newField) = (imageProps(p).Perimeter).^2 / imageProps(p).Area;
+end
+
+newField = 'Sharpness';                   
+for p=1:length(indexes)
+   [Gx, Gy] = gradient(imageProps(p).FilledImage);
+   S = sqrt(Gx.*Gx+Gy.*Gy);
+   sharpness = sum(sum(S))./(numel(Gx));
+   imageProps(p).(newField) = sharpness;
+end
+
+
 while(true)
    [x, y, button] = ginput(1);
    switch button
@@ -199,59 +222,29 @@ while(true)
            while(true)
                % select region
                [xm, ym, buttonm] = ginput(1);
-               ret = labelsOpened(round(ym),round(xm));
-               if (ret ~= 0)
-                   xr = imageProps(ret).Centroid(1);
-                   yr = imageProps(ret).Centroid(2);
-                   
-                   % region information
-                   regionText = strcat('Region #', num2str(ret));
-                   areaText = {'Area:', num2str(imageProps(ret).Area)};
-                   areaTextCat = strjoin(areaText, ' '); 
-                   perimeterText = {'Perimeter:', num2str(imageProps(ret).Perimeter)};
-                   perimeterTextCat = strjoin(perimeterText, ' ');
-                   legendText = {regionText, areaTextCat, perimeterTextCat}; 
-                   legendTextCat = strjoin(legendText, '\n');
-                   
-                   % position textbox
-                   t = text(xr-200-imageProps(ret).Perimeter/(2*pi), yr-imageProps(ret).Perimeter/(2*pi), legendTextCat, 'FontSize',12,'FontWeight','bold');
-                   
-                   % textbox formatting
-                   t.BackgroundColor = 'w';
-                   t.Color = 'k';
-                   t.FontSmoothing = 'on';
-                   t.FontSize = 10;
-                   t.Margin = 5;
-               end
                
                if (buttonm == 113) % Press q to quit
-                   imshow(originalImage);
-                   break;
+                       imshow(originalImage);
+                       break;
                end
-           end
-           
-           
-       case 100 % Letter d - compute distances
-           while(true)
-               [xm, ym, buttonm] = ginput(1);
-               ret = labelsOpened(round(ym),round(xm));
-               hold on
-               for j=1:length(indexes)
-                   if (j ~= ret)
-                       x1 = imageProps(ret).Centroid(1);
-                       y1 = imageProps(ret).Centroid(2);
-                       x2 = imageProps(indexes(j)).Centroid(1);
-                       y2 = imageProps(indexes(j)).Centroid(2);
-                       distance = sqrt((x1-x2).^2 + (y1-y2).^2);
-                       plot(imageProps(ret).Centroid(1),imageProps(ret).Centroid(2),'rx', 'LineWidth', 3);
-                       plot(imageProps(indexes(j)).Centroid(1),imageProps(indexes(j)).Centroid(2),'rx', 'LineWidth', 3);
-                       plot([round(x1) round(x2)], [round(y1) round(y2)], 'k:', 'LineWidth', 2);
+               
+               if (buttonm == 1)
+                   ret = labelsOpened(round(ym),round(xm));
+                   if (ret ~= 0)
+                       xr = imageProps(ret).Centroid(1);
+                       yr = imageProps(ret).Centroid(2);
 
-                       % Plot Distance Information
-                       xnew = x1 - (x1-x2)/2;
-                       ynew = y1 - (y1-y2)/2;
+                       % region information
+                       regionText = strcat('Region #', num2str(ret));
+                       areaText = {'Area:', num2str(imageProps(ret).Area)};
+                       areaTextCat = strjoin(areaText, ' '); 
+                       perimeterText = {'Perimeter:', num2str(imageProps(ret).Perimeter)};
+                       perimeterTextCat = strjoin(perimeterText, ' ');
+                       legendText = {regionText, areaTextCat, perimeterTextCat}; 
+                       legendTextCat = strjoin(legendText, '\n');
 
-                       t = text(round(xnew), round(ynew), num2str(distance), 'FontSize', 9,'FontWeight','bold');
+                       % position textbox
+                       t = text(xr-200-imageProps(ret).Perimeter/(2*pi), yr-imageProps(ret).Perimeter/(2*pi), legendTextCat, 'FontSize', 12,'FontWeight', 'bold');
 
                        % textbox formatting
                        t.BackgroundColor = 'w';
@@ -261,16 +254,51 @@ while(true)
                        t.Margin = 5;
                    end
                end
+           end
+           
+           
+       case 100 % Letter d - compute distances
+           while(true)
+               [xm, ym, buttond] = ginput(1);
+               ret = labelsOpened(round(ym),round(xm));
                
-               [xm, ym, buttonAfter] = ginput(1);
-
-               if (buttonAfter == 113) % Press q to quit
+               if (buttond == 113) % Press q to quit
                        imshow(originalImage);
                        break;
                end
-               if (buttonAfter == 114) % Press r to reset
+               
+               if (buttond == 114) % Press r to reset
                        imshow(originalImage);
                end
+               
+               if (buttond == 1)
+                   hold on
+                   for j=1:length(indexes)
+                       if (j ~= ret)
+                           x1 = imageProps(ret).Centroid(1);
+                           y1 = imageProps(ret).Centroid(2);
+                           x2 = imageProps(indexes(j)).Centroid(1);
+                           y2 = imageProps(indexes(j)).Centroid(2);
+                           distance = sqrt((x1-x2).^2 + (y1-y2).^2);
+                           plot(imageProps(ret).Centroid(1),imageProps(ret).Centroid(2),'rx', 'LineWidth', 3);
+                           plot(imageProps(indexes(j)).Centroid(1),imageProps(indexes(j)).Centroid(2),'rx', 'LineWidth', 3);
+                           plot([round(x1) round(x2)], [round(y1) round(y2)], 'k:', 'LineWidth', 2);
+
+                           % Plot Distance Information
+                           xnew = x1 - (x1-x2)/2;
+                           ynew = y1 - (y1-y2)/2;
+
+                           t = text(round(xnew), round(ynew), num2str(distance), 'FontSize', 9,'FontWeight','bold');
+
+                           % textbox formatting
+                           t.BackgroundColor = 'w';
+                           t.Color = 'k';
+                           t.FontSmoothing = 'on';
+                           t.FontSize = 10;
+                           t.Margin = 5;
+                       end
+                   end
+               end             
            end
            
            
@@ -355,7 +383,18 @@ while(true)
            while(true)
                [xo, yo, buttonOrder] = ginput(1);
                
-               if(buttonOrder == 49) % order by area
+               if (buttonOrder == 113) % Press q to quit
+                   close(orderedFigure);
+                   imshow(originalImage);
+                   break;
+               end
+               
+               if (buttonOrder == 114) % Press r to reset
+                   close(orderedFigure);
+                   imshow(originalImage);
+               end
+               
+               if(buttonOrder == 49) % press 1 - order by area
                    regionAreas = [imageProps.Area];
                    [sorted, ind] = sort(regionAreas);
                    orderedFigure = figure;
@@ -367,8 +406,7 @@ while(true)
                    end
                end
                
-               % FIX THIS
-               if(buttonOrder == 50) % order by perimeter
+               if(buttonOrder == 50) % press 2 -order by perimeter
                    regionPerimeters = [imageProps.Perimeter];
                    [sorted, ind] = sort(regionPerimeters);
                    orderedFigure = figure;
@@ -380,20 +418,89 @@ while(true)
                    end
                end
                
-               [xm, ym, buttonAfter] = ginput(1);
-               if (buttonAfter == 113) % Press q to quit
-                   close(orderedFigure);
-                   imshow(originalImage);
+               if(buttonOrder == 51) % press 3 - order by circularity
+                   regionCircularities = [imageProps.Circularity];
+                   [sorted, ind] = sort(regionCircularities);
+                   orderedFigure = figure;
+                   hold on;
+                   
+                   for o=1:length(ind)
+                       boundingBox = imageProps(ind(o)).BoundingBox;
+                       cropped = imcrop(originalImage, boundingBox);
+                       subplot(1, length(ind), o), imshow(cropped);
+                   end
+                   
+                   % compactness = P^2 / A
+                   % circularity ratio = 4 pi A / P^2
+                   % circularity = P^2 / 4 pi A
+                   
                end
                
-               if (buttonAfter == 114) % Press r to reset
-                   close(orderedFigure);
-                   imshow(originalImage);
+               if(buttonOrder == 52) % press 4 - order by sharpness
+                   regionSharpnesses = [imageProps.Sharpness];
+                   [sorted, ind] = sort(regionSharpnesses);
+                   orderedFigure = figure;
+                   hold on;
+                   
+                   for o=1:length(ind)
+                       boundingBox = imageProps(ind(o)).BoundingBox;
+                       cropped = imcrop(originalImage, boundingBox);
+                       subplot(1, length(ind), o), imshow(cropped);
+                   end
                end
            end
            
+       case 97 % Letter a - return the amount of money
+           while (true)
+               
+               % TODO: count cropped coins
+               value = 0.0;
+               
+               for q=1:length(indexes)
+                   if (12.3 < imageProps(q).Circularity) && (imageProps(q).Circularity < 12.7)
+                       fprintf('COIN\n');
+                       val = 0.0;
+                       if (coin1CentAO - delta1CentA < imageProps(q).Area) && (imageProps(q).Area < coin1CentAO + delta1CentA)
+                           value = value + 0.01
+                           val = val + 0.01;
+                       end
+                       if (coin2CentAO - delta2CentA < imageProps(q).Area) && (imageProps(q).Area < coin2CentAO + delta2CentA)
+                           value = value + 0.02
+                           val = val + 0.02;
+                       end
+                       if (coin10CentAO - delta10CentA < imageProps(q).Area) && (imageProps(q).Area < coin10CentAO + delta10CentA)
+                           value = value + 0.10
+                           val = val + 0.10;
+                       end
+                       if (coin5CentAO - delta5CentA < imageProps(q).Area) && (imageProps(q).Area < coin5CentAO + delta5CentA)
+                           value = value + 0.05
+                           val = val + 0.05;
+                       end
+                       if (coin20CentAO - delta20CentA < imageProps(q).Area) && (imageProps(q).Area < coin20CentAO + delta20CentA)
+                           value = value + 0.20
+                           val = val + 0.20;
+                       end
+                       if (coin1EurAO - delta1EurA < imageProps(q).Area) && (imageProps(q).Area < coin1EurAO + delta1EurA)
+                           value = value + 1.00
+                           val = val + 1.00;
+                       end
+                       if (coin50CentAO - delta50CentA < imageProps(q).Area) && (imageProps(q).Area < coin50CentAO + delta50CentA)
+                           value = value + 0.50
+                           val = val + 0.50;
+                       end
+                       newField = 'Value';
+                       imageProps(q).(newField) = val;
+                   end
+               end
+               fprintf('Amount of money:\n')
+               value
+               break;
+           end
+           
+           
        otherwise
            fprintf('Byeeeee\n');
+           close all;
            break;
    end
 end
