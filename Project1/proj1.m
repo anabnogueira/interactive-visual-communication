@@ -1,3 +1,15 @@
+% - - - - - - - - - - - - - - - - - - - - - - - - - -
+%                   First Lab Work                  |
+% - - - - - - - - - - - - - - - - - - - - - - - - - -
+%                       Group 13                    |
+% - - - - - - - - - - - - - - - - - - - - - - - - - -
+% - - - - - - - - - - - - - - - - - - - - - - - - - -
+%               82433   Ana Nogueira                |
+%               83553   Pilar Pereira               |
+%               83563   Sara Franco                 |
+% - - - - - - - - - - - - - - - - - - - - - - - - - -
+% - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 close all, clear all
 
 mlPath = pwd;
@@ -39,7 +51,7 @@ openImage = imdilate(erosionImage, seOp);
 
 [lbO, numO]=bwlabel(openImage);
 
-coinPropsOpened = regionprops(lbO, 'Area', 'Perimeter');
+coinPropsOpened = regionprops(lbO, 'Area', 'Perimeter', 'BoundingBox');
 coinPropsOpened(end) = [];
 
 areasO = sort([coinPropsOpened.Area]);
@@ -62,6 +74,33 @@ delta5CentA = (coin5CentA - coin5CentAO) * dilationRadius / erosionRadius;
 delta20CentA = (coin20CentA - coin20CentAO) * dilationRadius / erosionRadius;
 delta1EurA = (coin1EurA - coin1EurAO) * dilationRadius / erosionRadius;
 delta50CentA = (coin50CentA - coin50CentAO) * dilationRadius / erosionRadius;
+
+% Training Coin Sides
+
+filterY = fspecial('sobel');
+imgdy = filter2(filterY, originalImg(:,:,1));
+filterX = fliplr(filterY');
+imgdx = filter2(filterX, originalImg(:,:,1));
+
+mod = sqrt(imgdy.^2 + imgdx.^2);
+module = mat2gray(mod);
+
+% Determining coin variance
+variances = [];
+for i=1:length(coinPropsOpened)
+    boundingBox = coinPropsOpened(i).BoundingBox;
+    cropped = imcrop(module, boundingBox);
+    variances = [variances ; var(var(cropped))];
+end
+
+% Coin Variances
+var1Cent = variances(3);
+var2Cent = variances(1);
+var10Cent = variances(4);
+var5Cent = variances(5);
+var20Cent = variances(2);
+var1Eur = variances(6);
+var50Cent = variances(7);
 
 
 fprintf('\n--------------------------------------------------------------------\n')
@@ -182,11 +221,17 @@ set(gcf, 'Position', [100 100 1000 500]);
 % Show available commands - general
 commands = {'Press:', 'n - nr of objects', 'm - measurements of objects', 'd - distances between objects',...
 'g - derivatives graph', 'o - order by parameter', 'a - count amount of money', 's - order by similarity',...
-'h - show histogram', 'x - show heatmap', ' ', 'q - quit'};
+'h - show histogram', 'x - show heatmap', 'z - detect coin sides' , ' ', 'q - quit'};
 
 commandsText = strjoin(commands, '\n');
 
 % Show available commands for each menu
+
+commandsN1 = {char(9), char(9), char(9), char(9), char(9), char(9), char(9), char(9), char(9), char(9), char(9), char(9), num2str(length(indexes))};
+commandsN1Text = strjoin(commandsN1, ' ');
+commandsN = {'Number of Objects detected: ', ' ', commandsN1Text, ' ', 'Press:', 'q - quit'};
+commandsNText = strjoin(commandsN, '\n');
+
 commandsM = {'Click object to show', 'measurements', ' ', 'Press:', 'q - quit'};
 commandsMText = strjoin(commandsM, '\n');
 
@@ -198,8 +243,7 @@ commandsG1Text = strjoin(commandsG1, '\n');
 commandsG2 = {'Choose number of points', 'in the console'};
 commandsG2Text = strjoin(commandsG2, '\n');
 
-commandsO = {'Select parameter to order by:', '1 - Area', '2 - Perimeter',...
-    '3 - Circularity', '4 - Sharpness'};
+commandsO = {'Select parameter to order by:', '1 - Area', '2 - Perimeter', '3 - Circularity', '4 - Sharpness'};
 commandsOText = strjoin(commandsO, '\n');
 
 commandsS1 = 'Select one object';
@@ -208,13 +252,19 @@ commandsS2 = 'Objects most similar to chosen object';
 commandsH = {'Press:', 'q - quit'};
 commandsHText = strjoin(commandsH, '\n');
 
+% Compute coin sides operation
+imgdyInput = filter2(filterY, originalImage(:,:,1));
+imgdxInput = filter2(filterX, originalImage(:,:,1));
+modInput = sqrt(imgdyInput.^2 + imgdxInput.^2);
+moduleInput = mat2gray(modInput);
+
+
 
 % Program start
 while(true)
+    
    % Position textbox
    t = text(width + 50, 200, commandsText, 'FontWeight', 'bold');
-
-   % Textbox formatting
    t.BackgroundColor = 'w';
    t.Color = 'k';
    t.FontSmoothing = 'on';
@@ -231,15 +281,30 @@ while(true)
            
            
        case 110 % Letter n - show number of objects contained in image
-           fprintf('Number of Objects detected: ' + string(length(indexes)) + '\n');
+           delete(t);
+           while(true)
+               tN = text(width + 50, 200, commandsNText, 'FontWeight', 'bold');
+               % Textbox formatting
+               tN.BackgroundColor = 'w';
+               tN.Color = 'k';
+               tN.FontSmoothing = 'on';
+               tN.FontSize = 13;
+               tN.Margin = 5;
+               
+               [xm, ym, buttonm] = ginput(1);
+               
+               if (buttonm == 113) % Press q to quit
+                       delete(tN);
+                       imshow(originalImage);
+                       break;
+               end 
+           end
            
            
        case 109 % Letter m - show coin/object measurements
            hold on
            delete(t);
            tM = text(width + 50, 200, commandsMText, 'FontWeight', 'bold');
-
-           % Textbox formatting
            tM.BackgroundColor = 'w';
            tM.Color = 'k';
            tM.FontSmoothing = 'on';
@@ -290,8 +355,6 @@ while(true)
 
                        % Position textbox
                        t = text(xr-200-imageProps(ret).Perimeter/(2*pi), yr-imageProps(ret).Perimeter/(2*pi), legendTextCat, 'FontSize', 12,'FontWeight', 'bold');
-
-                       % Textbox formatting
                        t.BackgroundColor = 'w';
                        t.Color = 'k';
                        t.FontSmoothing = 'on';
@@ -304,9 +367,8 @@ while(true)
            
        case 100 % Letter d - compute distances
            delete(t);
+           
            tD = text(width + 50, 200, commandsDText, 'FontWeight', 'bold');
-
-           % Textbox formatting
            tD.BackgroundColor = 'w';
            tD.Color = 'k';
            tD.FontSmoothing = 'on';
@@ -359,6 +421,7 @@ while(true)
                            plot([round(x1) round(x2)], [round(y1) round(y2)], 'k', 'LineWidth', 0.5 + 0.8 * a);
                            plot(x2, y2, 'ro', 'LineWidth', 6);
                        end
+                       
                        % Plot centroid of chosen region
                        plot(imageProps(ret).Centroid(1), imageProps(ret).Centroid(2), 'ro', 'LineWidth', 6);
                    end
@@ -368,19 +431,18 @@ while(true)
            
        case 103 % Letter g - show boundary derivative graph
            delete(t);
-           tG1 = text(width + 50, 200, commandsG1Text, 'FontWeight', 'bold');
-
-           % Textbox formatting
-           tG1.BackgroundColor = 'w';
-           tG1.Color = 'k';
-           tG1.FontSmoothing = 'on';
-           tG1.FontSize = 13;
-           tG1.Margin = 5;
            
            while(true)
+               tG1 = text(width + 50, 200, commandsG1Text, 'FontWeight', 'bold');
+               tG1.BackgroundColor = 'w';
+               tG1.Color = 'k';
+               tG1.FontSmoothing = 'on';
+               tG1.FontSize = 13;
+               tG1.Margin = 5;
+               
                % Waits for user to select region
                [xb, yb, buttonG] = ginput(1);
-               
+               delete(tG1);
                if (buttonG == 1)
                    ret = labelsOpened(round(yb),round(xb));
 
@@ -391,10 +453,7 @@ while(true)
 
                        plot(boundary(:,2), boundary(:,1), 'k--', 'LineWidth', 4);
 
-                       delete(tG1);
                        tG2 = text(width + 50, 200, commandsG2Text, 'FontWeight', 'bold');
-
-                       % Textbox formatting
                        tG2.BackgroundColor = 'w';
                        tG2.Color = 'k';
                        tG2.FontSmoothing = 'on';
@@ -438,30 +497,25 @@ while(true)
                        x = x.';
                        y = b;
                        graph = plot(x,y);
-                       % Format graph
                        graph.LineWidth = 2;
                        graph.Color = 'r';
                        ax = gca;
                        ax.XAxisLocation = 'origin'; 
 
-                       % Wait for input on graph window
-                       [xg, yg, buttonGraph] = ginput(1);
-                       if (buttonGraph == 113)
-                           close(graphFigure);
-                       end
+                       while(true)
+                           % Wait for input on graph window
+                           [xg, yg, buttonGraph] = ginput(1);
 
+                           if (buttonGraph == 113)
+                               close(graphFigure);
+                               break;
+                           end
+                       end
+                       
                        delete(tG2);
 
                        points = findobj('type','line');
                        delete(points);
-                       t = text(width + 50, 200, commandsG1Text, 'FontWeight', 'bold');
-
-                       % Textbox formatting
-                       t.BackgroundColor = 'w';
-                       t.Color = 'k';
-                       t.FontSmoothing = 'on';
-                       t.FontSize = 13;
-                       t.Margin = 5;
                        
                    end
                end       
@@ -472,12 +526,11 @@ while(true)
                end
            end
            
-       case 111 % Letter o - order by different parameters
            
+       case 111 % Letter o - order by different parameters
            delete(t);
+           
            tO = text(width + 50, 200, commandsOText, 'FontWeight', 'bold');
-
-           % Textbox formatting
            tO.BackgroundColor = 'w';
            tO.Color = 'k';
            tO.FontSmoothing = 'on';
@@ -489,6 +542,7 @@ while(true)
                
                if (buttonOrder == 113) % Press q to quit
                    close(orderedFigure);
+                   delete(tO);
                    imshow(originalImage);
                    break;
                end
@@ -543,14 +597,14 @@ while(true)
                if(buttonOrder == 51) % Press 3 - order by circularity
                    regionCircularities = [imageProps.Circularity];
                    [sorted, ind] = sort(regionCircularities);
-                   orderedFigure = figure('Name', 'Objects ordered by Circularity');
+                   orderedFigure = figure('Name', 'Objects ordered by Circularity', 'Position', [10 10 1200 800]);
                    hold on;
                    
                    for o=1:length(ind)
                        boundingBox = imageProps(ind(o)).BoundingBox;
                        cropped = imcrop(originalImage, boundingBox);
                        if (o~=1)
-                           imgResized = imresize(cropped, (1 + (o * 0.06)));
+                           imgResized = imresize(cropped, o);
                            ax(o) = subplot(1, length(ind), o); imshow(imgResized);
                        end
                        if (o==1)
@@ -566,25 +620,29 @@ while(true)
                    nrPoints = 30;
                    sharpnesses = [];
                    
+                   if (length(B) ~= N)
+                       B(end) = [];
+                   end
+                   
                    for a=1:length(B)
-                       aBoundary = [];
-                       step = round(length(B{a})/nrPoints);
+                       boundary = [];
+                       step = floor(length(B{a})/nrPoints);
                        index = 1;
 
                        for l=1:nrPoints
                            if((B{a}(index,2) ~= 1) && (B{a}(index,1) ~=1) && (B{a}(index,1) ~= height) && (B{a}(index,2) ~= width))
                                plot(B{a}(index,2), B{a}(index,1),'ro', 'LineWidth', 3);                           
-                               aBoundary = [aBoundary ; B{a}(index,2), B{a}(index,1)];
+                               boundary = [boundary ; B{a}(index,2), B{a}(index,1)];
                            end
                            index = index + step;
                        end
 
-                       ddA = diff(aBoundary(:,1),2);
-                       
+                       ddA = diff(boundary(:,1),2);
                        sharpnesses = [sharpnesses ; max(abs(ddA)), a];
                    end
                    
                    sharpnesses = sortrows(sharpnesses, 1);
+                   
                    orderedFigure = figure('Name','Objects ordered by Sharpness', 'Position', [10 10 1200 800]);
                    hold on;
                    
@@ -593,11 +651,11 @@ while(true)
                        boundingBox = imageProps(sharpnesses(i,2)).BoundingBox;
                        cropped = imcrop(originalImage, boundingBox);
                        if (i~=length(sharpnesses))
-                           imgResized = imresize(cropped, i);
+                           imgResized = imresize(cropped, (1 + (i * 0.06)));
                            axisvec(i) = subplot(1, length(sharpnesses), i); imshow(imgResized);
                        end
                        if (i==length(sharpnesses))
-                           imgResized = imresize(cropped, i);
+                           imgResized = imresize(cropped, (1 + (i * 0.06)));
                            axisvec(i) = subplot(1, length(sharpnesses), i); imshow(imgResized);
                        end
                    end
@@ -605,11 +663,11 @@ while(true)
                end
            end
            
+           
        case 97 % Letter a - return the amount of money
            delete(t);
            
            while (true)
-               
                % Total Value
                value = 0.0;
                
@@ -656,8 +714,6 @@ while(true)
                commandsAText = strjoin(commandsA, '\n');
                
                tA = text(width + 50, 200, commandsAText, 'FontWeight', 'bold');
-
-               % Textbox formatting
                tA.BackgroundColor = 'w';
                tA.Color = 'k';
                tA.FontSmoothing = 'on';
@@ -673,14 +729,13 @@ while(true)
                end
            end
            
-       case 115 % Letter s - show coins according to a similarity measure
            
+       case 115 % Letter s - show coins according to a similarity measure
            delete(t);
+           
            while(true)
                
                tS1 = text(width + 50, 200, commandsS1, 'FontWeight', 'bold');
-
-               % Textbox formatting
                tS1.BackgroundColor = 'w';
                tS1.Color = 'k';
                tS1.FontSmoothing = 'on';
@@ -736,10 +791,10 @@ while(true)
                        if (buttonS2 == 114) % Press r to reset
                            close(similarityFigure);
                        end
-                       
                    end
                end
            end
+           
            
        case 104 % Letter h - show histogram for RGB image
            
@@ -753,9 +808,8 @@ while(true)
            lineG.LineWidth = 2;
            lineB.LineWidth = 2;
            hold off;
+           
            tH = text(305, 18000, commandsHText, 'FontWeight', 'bold');
-
-           % Textbox formatting
            tH.BackgroundColor = 'w';
            tH.Color = 'k';
            tH.FontSmoothing = 'on';
@@ -773,6 +827,7 @@ while(true)
        
        case 120 % Letter x - show heatmap regions
            while(true)
+               % Compute distances between all objects
                listDistance = struct('Distance', {}, 'Index', {});
                for a=1:length(indexes)
                    tX = text(imageProps(a).Centroid(1)-7, imageProps(a).Centroid(2)-7, num2str(a), 'FontWeight', 'bold');
@@ -789,21 +844,112 @@ while(true)
                        matrix(a,b) = distance;
                    end
                end
+               
                pause(3);
                xvalues = [1:1:length(indexes)];
                yvalues = [1:1:length(indexes)];
                hm = HeatMap(matrix, 'ColumnLabels', xvalues, 'RowLabels', yvalues, 'Symmetric', 'false', 'ColumnLabelsRotate', 0);
                hm.Colormap = 'parula';
                
-               [xm, ym, buttonAfter] = ginput(1);
-               if (buttonAfter == 113) % Press q to quit
+               [xX, yX, buttonX] = ginput(1);
+               if (buttonX == 113) % Press q to quit
                    imshow(originalImage);
                    break;
                end
            end
            
+           
+       case 122 % Letter z - detect whether a coin is facing up or down
+            coinsCropped = struct('Cropped', {}, 'Text', {});
+            txt = '';
+
+            for q=1:length(indexes)
+                % For all regions
+               if (0.98 < imageProps(q).Circularity) && (imageProps(q).Circularity < 1.1)
+                   % For the ones that are coins, detect which coin
+                   boundingBox = imageProps(q).BoundingBox;
+                   croppedModule = imcrop(moduleInput, boundingBox);
+                   varcoin = var(var(croppedModule));
+                   cropped = imcrop(originalImage, boundingBox);
+                   
+                   if (coin1CentAO - delta1CentA < imageProps(q).Area) && (imageProps(q).Area < coin1CentAO + delta1CentA)
+                      if((var1Cent - 0.000015 < varcoin) && (varcoin < var1Cent + 0.000018))
+                          txt = '1 Cent Up';
+                      else
+                          txt = '1 Cent Down';
+                      end
+                   end
+                   if (coin2CentAO - delta2CentA < imageProps(q).Area) && (imageProps(q).Area < coin2CentAO + delta2CentA)
+                      if((var2Cent - 0.000015 < varcoin) && (varcoin < var2Cent + 0.000018))
+                          txt = '2 Cent Up';
+                      else
+                          txt = '2 Cent Down';
+                      end
+                   end
+                   if (coin10CentAO - delta10CentA < imageProps(q).Area) && (imageProps(q).Area < coin10CentAO + delta10CentA)
+                      if((var10Cent - 0.000045 < varcoin) && (varcoin < var10Cent + 0.000045))
+                          txt = '10 Cent Up';
+                      else
+                          txt = '10 Cent Down';
+                      end
+                   end
+                   if (coin5CentAO - delta5CentA < imageProps(q).Area) && (imageProps(q).Area < coin5CentAO + delta5CentA)
+                      if((var5Cent - 0.000015 < varcoin) && (varcoin < var5Cent + 0.000018))
+                          txt = '5 Cent Up';
+                      else
+                          txt = '5 Cent Down';
+                      end
+                   end
+                   if (coin20CentAO - delta20CentA < imageProps(q).Area) && (imageProps(q).Area < coin20CentAO + delta20CentA)
+                      if((var20Cent - 0.000015 < varcoin) && (varcoin < var20Cent + 0.000015))
+                          txt = '20 Cent Up';
+                      else
+                          txt = '20 Cent Down';
+                      end
+                   end
+                   if (coin1EurAO - delta1EurA < imageProps(q).Area) && (imageProps(q).Area < coin1EurAO + delta1EurA)
+                      if((var1Eur - 0.000007 < varcoin) && (varcoin < var1Eur + 0.0000011))
+                          txt = '1 Eur Up';
+                      else
+                          txt = '1 Eur Down';
+                      end
+                   end
+                   if (coin50CentAO - delta50CentA < imageProps(q).Area) && (imageProps(q).Area < coin50CentAO + delta50CentA)
+                      if((var50Cent - 0.00001 < varcoin) && (varcoin < var50Cent + 0.000085))
+                          txt = '50 Cent Up';
+                      else
+                          txt = '50 Cent Down';
+                      end
+                       
+                   end
+                   
+                   tempStr = struct('Cropped', cropped, 'Text', txt);
+                   coinsCropped = [coinsCropped ; tempStr];
+               end
+            end
+            
+           coinsFigure = figure('Name', 'Coin Sides', 'Position', [10 10 1000 600]);
+           hold on;
+           
+           for i=1:length(coinsCropped)
+               subplot(1, length(coinsCropped), i), imshow(coinsCropped(i).Cropped);
+               title(coinsCropped(i).Text);
+           end
+           
+           while(true)
+               [xZ, yZ, buttonZ] = ginput(1);
+               if (buttonZ == 113) % Press q to quit
+                   close(coinsFigure);
+                   imshow(originalImage);
+                   delete(t);
+                   break;
+               end
+           end            
+           
        otherwise
+           delete(t);
            continue;
+           
    end
 end
 
