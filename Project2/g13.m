@@ -42,7 +42,7 @@ matrixPR = [];
 intersections = [];
 
 for frame=startF:endF
-    [currentImg,map2] = imread(sprintf('img1/%.6d.jpg', startNum + frame));
+    [currentImg,map2] = imread(sprintf('PETS09-S2L2/img1/%.6d.jpg', startNum + frame));
     axes(axFrame);
     hold on;
     imshow(currentImg,map2);
@@ -350,11 +350,9 @@ function plotPrecision(precision, startF, endF)
 x = [startF-1 : 1 : endF-1];
 gr1 = subplot(2,2,1);
 plot(x, precision, 'r-', 'LineWidth', 2);
-%axis([0 1 0 1]);
 title('Precision/frame');
 xlabel('# Frame');
 ylabel('Precision');
-%axis([0 inf 0 1]);
 end
 
 % plot recall graph
@@ -362,7 +360,6 @@ function plotRecall(recall, startF, endF)
 x = [startF-1 : 1 : endF-1];
 gr3 = subplot(2,2,3);
 plot(x, recall, 'm-', 'LineWidth', 2);
-%axis([0 inf 0 1]);
 title('Recall/frame');
 xlabel('# Frame');
 ylabel('Recall');
@@ -383,7 +380,6 @@ function plotIoU(intersections)
 gr4 = subplot(2,2,4);
 plot(intersections(:,1).', intersections(:,2), 'LineWidth', 2);
 title('Intersection Over Union');
-%axis([0 inf 0 1]);
 xlabel('# Frames');
 ylabel('IoU');
 
