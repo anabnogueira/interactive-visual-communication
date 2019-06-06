@@ -15,10 +15,10 @@ startNum = 000000;
 % Read annotations and compute background
 text = readFile();
 
-backgroundStruct = load('backgroundImg.mat');
-imgbk = backgroundStruct.imgbk;
-map1 = [];
-%[imgbk, map1] = computeBackground(seqLength, startNum);
+%backgroundStruct = load('backgroundImg.mat');
+%imgbk = backgroundStruct.imgbk;
+%map1 = [];
+[imgbk, map1] = computeBackground(seqLength, startNum);
 
 [startF, endF] = selectVideoSection();
 
@@ -44,6 +44,7 @@ intersections = [];
 for frame=startF:endF
     [currentImg,map2] = imread(sprintf('PETS09-S2L2/img1/%.6d.jpg', startNum + frame));
     axes(axFrame);
+    
     hold on;
     imshow(currentImg,map2);
     
@@ -382,5 +383,4 @@ plot(intersections(:,1).', intersections(:,2), 'LineWidth', 2);
 title('Intersection Over Union');
 xlabel('# Frames');
 ylabel('IoU');
-
 end
